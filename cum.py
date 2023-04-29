@@ -13,31 +13,44 @@ def get_header():
 def reconciliate(parent, children):
     parent_level = parent.level
     calculating_level = sys.maxsize
+    '''
+    by default, the invocation time is total time, but is can be overriden by
+    the sum of children's invocation time
+    '''
+    parent.invocation_time = parent.total_time
     time = 0
-    for i in range(0, len(children)):
+    i = 0
+    while True:
+        if i >= len(children):
+            break
         c = children[i]
+        # stop processing before a brother or parent
         if c.level <= parent_level:
             return i
         else:
+            '''
+            calculating_level is the level of nearest descendant
+            who is the highest level(lower number)
+            '''
             if c.level <= calculating_level:
                 calculating_level = c.level
-                n = reconciliate(c, children[i + 1:])
-                if c.total_time is not None:
-                    time = time + c.total_time
-                    i = n
-            if c.level == calculating_level:
-                if c.total_time is not None:
-                    time = time + c.total_time
-    if parent.invocation_time is None:
-        parent.invocation_time = 0
-    parent.invocation_time = parent.invocation_time + time
-        else:
-            if c.level == calculating_level:
-                total = total + c.total_time
-        
-            
-    for c in children:
-        if c.level == children_level
+            '''
+            elements what level are higher or equals to the CURRENT CALCULATING LEVEL
+            will be counted, that means, a previous lower level element is also counted
+            for example:
+            for parent with level 1, children in [4, 3, 4]
+            the leading 4 is counted since CURRENT CALCULATING LEVEL is 4
+            3 is counted since CURRENT CALCULATING LEVEL is 3
+            the tailing 4 is skipped since CURRENT CALCULATING LEVEL is 3
+            '''
+            n = reconciliate(c, children[i + 1:])
+            if c.level <= calculating_level:
+                if c.invocation_time is not None:
+                    time = time + c.invocation_time
+            i = n - 1
+        i = i + 1
+    parent.invocation_time = time
+    return i
 
 
 class Cum:

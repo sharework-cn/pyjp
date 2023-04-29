@@ -2,11 +2,13 @@ import unittest
 import cum
 
 
+def create_cums():
+    cums = []
+    for i in range(1, 10):
+        cums.append(cum.Cum(seq=0, level=i, total_time=i))
+
+
 class TestingCase(unittest.TestCase):
-
-    def test_for(self):
-
-
     def test_comparison(self):
         cum0 = cum.Cum(0, 0, "0")
         cum1 = cum.Cum(1, 1, "1")
@@ -20,3 +22,5 @@ class TestingCase(unittest.TestCase):
         self.assertTrue(cum1 < cum2)
         self.assertTrue(cum1 <= cum2)
 
+    def test_reconciliate(self):
+        pass
