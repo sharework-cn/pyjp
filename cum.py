@@ -11,22 +11,26 @@ def get_header():
 
 
 def reconciliate(parent, children):
-    parent_level = parent.level
     calculating_level = sys.maxsize
-    '''
-    by default, the invocation time is total time, but is can be overriden by
-    the sum of children's invocation time
-    '''
-    parent.invocation_time = parent.total_time
     time = 0
+    parent_level = 0
     i = 0
+    reconciliated = False
+    if parent is not None:
+        '''
+        by default, the invocation time is total time, but is can be overriden by
+        the sum of children's invocation time
+        '''
+        parent.invocation_time = parent.total_time
+        parent_level = parent.level
+
     while True:
         if i >= len(children):
             break
         c = children[i]
         # stop processing before a brother or parent
         if c.level <= parent_level:
-            return i
+            break
         else:
             '''
             calculating_level is the level of nearest descendant
@@ -44,12 +48,17 @@ def reconciliate(parent, children):
             the tailing 4 is skipped since CURRENT CALCULATING LEVEL is 3
             '''
             n = reconciliate(c, children[i + 1:])
+            reconciliated = True
             if c.level <= calculating_level:
                 if c.invocation_time is not None:
                     time = time + c.invocation_time
-            i = n - 1
+            '''
+            n is the start of next iteration, so we set i to n - 1
+            '''
+            i = i + n
         i = i + 1
-    parent.invocation_time = time
+    if reconciliated:
+        parent.invocation_time = time
     return i
 
 
@@ -95,6 +104,9 @@ class Cum:
             self.invocation_time,
             self.invocation_percent
         ]
+
+    def __str__(self):
+        return f"{self.level} - {self.name}"
 
     def __lt__(self, other):
         return self.level < other.level
