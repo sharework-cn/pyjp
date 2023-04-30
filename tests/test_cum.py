@@ -1,11 +1,14 @@
 import unittest
+from copy import copy
+
 import cum
 
 
 def create_cums():
     cums = []
-    for i in range(1, 10):
+    for i in range(0, 9):
         cums.append(cum.Cum(seq=0, level=i, total_time=i))
+    return cums
 
 
 class TestingCase(unittest.TestCase):
@@ -22,5 +25,26 @@ class TestingCase(unittest.TestCase):
         self.assertTrue(cum1 < cum2)
         self.assertTrue(cum1 <= cum2)
 
-    def test_reconciliate(self):
-        pass
+    def test_reconciliate_1(self):
+        parent = cum.Cum(0, 0, "ROOT")
+        arr = create_cums()
+        '''
+        it is expected that all the elements be taken account
+        '''
+        cums = [copy(arr[5]),
+                copy(arr[1]),
+                copy(arr[2]),
+                copy(arr[3]),
+                copy(arr[3]),
+                copy(arr[2]),
+                copy(arr[1]),
+                copy(arr[1]),
+                cum.Cum(0, 0, "BROTHER"),
+                copy(arr[1])]
+        next_pos = cum.reconciliate(parent, cums)
+        self.assertEqual(3, cums[3].invocation_time)
+        self.assertEqual(6, cums[2].invocation_time)
+        self.assertEqual(8, cums[1].invocation_time)
+        self.assertEqual(15, parent.invocation_time)
+        self.assertEqual(8, next_pos)
+
