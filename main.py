@@ -1,7 +1,8 @@
 from bs4 import BeautifulSoup
 import sys
 import logging
-import csv
+from csv import writer as csv_writer
+from html_parser import parse
 
 
 def parse_line(line):
@@ -80,23 +81,53 @@ def get_method(s):
     return v
 
 
+class CsvWriter:
+    def __init__(self, f):
+        self.writer = csv_writer(f, dialect="excel")
+        self.write_header = True
+
+    def listen(self, cum):
+        if self.write_header:
+            self.writer.writerow(get_header())
+            self.write_header = False
+        self.writer.writerow(cum.get_values())
+
+
+class ConsoleWriter:
+
+    def __init__(self):
+        self.count = 0
+
+    def listen(self, cum):
+        print(str(cum))
+        self.count = self.count + 1
+
+
+class ConsoleCounterListener:
+
+    def __init__(self):
+        self.events = 0
+
+    def listen(self, count):
+        print(format(count), f"{count} lines written")
+        self.events = self.events + 1
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         logging.error("Usage: script <input file> <output file>!")
         exit(1)
-    with open(sys.argv[1], 'r', encoding='utf-8') as f:
-        soup = BeautifulSoup(f.read(), features='html.parser')
-        with open(sys.argv[2], 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile, dialect="excel")
-            writer.writerow(get_header())
-            cnt = 0
-            for tr in soup.find_all("tr"):
-                if tr.attrs.get("valign") == "top":
-                    result = parse_line(tr)
-                    if len(result) > 0:
-                        writer.writerow(result)
-                cnt = cnt + 1
-                if cnt % 5000 == 0:
-                    print(str(cnt) + " lines read")
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+    source_file = open(sys.argv[1], 'r', encoding='utf-8')
+    output_file = open(sys.argv[2], 'w', newline='')
+    writer = CsvWriter(output_file)
+    exception = None
+    try:
+        parse(source_file, writer.listen, 5000, ConsoleCounterListener().listen)
+    except Exception as e:
+        exception = e
+    source_file.close()
+    output_file.close()
+    if exception is not None:
+        raise exception

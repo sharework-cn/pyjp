@@ -1,40 +1,83 @@
 import io
-import lxml.etree
-import lxml.html
+from lxml import etree, html
+from cum import Cum, get_header
+import stack
 
 
-def create_from_string(text, encode='utf-8'):
-    source = io.BytesIO(text.encode(encode))
+class TrExtractor:
 
-# 迭代读取 HTML 文件
-with open('example.html', 'rb') as f:
-    context = lxml.etree.iterparse(f, html=True, load_dtd=True)
+    def __init__(self, source):
+        self.source = source
+        self.buffer = ""
 
-    # 遍历节点
-    for action, elem in context:
-        # 如果节点是 title 标记，则输出标题信息
-        if elem.tag == 'title':
-            print('Title:', elem.text)
+    def __iter__(self):
+        return self
 
-        # 如果节点是 a 标记，则输出链接信息
-        elif elem.tag == 'a':
-            print('Link:', elem.get('href'))
+    def __next__(self):
+        tr_start_tag_pos = -1
+        tr_end_tag_pos = -1
+        data = None
+        skip_bytes_for_end_tag = 0
+        while tr_start_tag_pos < 0 and tr_end_tag_pos < 0:
+            if tr_start_tag_pos >= 0:
+                pos = self.buffer[skip_bytes_for_end_tag:].find("</tr>")
+                if pos >= 0:
+                    tr_end_tag_pos = pos + skip_bytes_for_end_tag
+                    data = self.buffer[tr_start_tag_pos:tr_end_tag_pos + 5]
+                    self.buffer = self.buffer[tr_end_tag_pos + 5:]
+                else:
+                    skip_bytes_for_end_tag = len(self.buffer)
+                    try:
+                        self.buffer += next(self.source)
+                    except StopIteration:
+                        data = self.buffer
+                        self.buffer = ""
+                        pass
+            else:
+                pos = self.buffer.find("<tr")
+                if pos >= 0:
+                    tr_start_tag_pos = pos
+                else:
+                    try:
+                        self.buffer = next(self.source)
+                    except StopIteration as e:
+                        raise e
+        return data
 
-        # 删除解析完毕的节点
-        elem.clear()
-        while elem.getprevious() is not None:
-            del elem.getparent()[0]
+
+def parse_tr(text):
+    h = None
+    try:
+        h = html.fromstring(text)
+    except etree.ParserError:
+        pass
+    if h is None:
+        return None
+    tree = html.parse(h)
+    images = tree.xpath("//img")
+    level = 0
+    for img in images:
+        height = img.get("height")
+        if height is not None and height == "18":
+            level = level + 1
+    return Cum(level=level)
 
 
-# 加载 HTML 文件
-doc = lxml.html.parse('example.html').getroot()
-
-# 获取 HTML 标题
-title = doc.find('.//title').text
-
-# 获取 HTML 页面的所有链接
-links = [a.get('href') for a in doc.cssselect('a')]
-
-# 输出结果
-print('Title:', title)
-print('Links:', links)
+def parse(source, listener, counter_interval=5000, counter_listener=None):
+    trs = TrExtractor(source)
+    s = stack.Stack(listener)
+    count = 0
+    for tp in trs:
+        tr = tp[1]
+        valign = tr.get("valign")
+        if valign is not None and valign == "top":
+            cum = parse_tr(tr.text)
+            if cum is not None and cum.is_valid():
+                count = count + 1
+                s.push(cum)
+                if count % counter_interval == 0:
+                    if counter_listener is not None:
+                        counter_listener(count)
+        tr.clear()
+        while tr.getprevious() is not None:
+            del tr.getparent()[0]

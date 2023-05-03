@@ -105,6 +105,9 @@ class Cum:
             self.invocation_percent
         ]
 
+    def is_valid(self):
+        return self.level > 0
+
     def __str__(self):
         return f"{self.level} - {self.name}"
 
