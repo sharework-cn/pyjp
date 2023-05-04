@@ -10,7 +10,15 @@ def get_header():
             "total_percent", "invocation_time", "invocation_percent"]
 
 
-def reconciliate(parent, children):
+def _reconciliate(parent, children):
+    """
+    Calculate the total invocation time of a parent method. It adds up the total_times
+    of all its children methods. It's important to note that if a child CUM (CPU Usage of Method)
+    has children of its own, the calculation will iterate into those as well.
+
+    In cases where the parent is omitted, the calculation will be triggered for all
+    the children CUMs.
+    """
     calculating_level = sys.maxsize
     time = 0
     parent_level = 0
@@ -21,7 +29,12 @@ def reconciliate(parent, children):
         by default, the invocation time is total time, but is can be overriden by
         the sum of children's invocation time
         '''
-        parent.invocation_time = parent.total_time
+        if not parent.calculated:
+            # print(f'{parent.seq} - {parent.level} - {parent.total_time}')
+            parent.invocation_time = parent.total_time
+            parent.time = parent.total_time
+            if len(children) == 0:
+                parent.lowest_level_method = True
         parent_level = parent.level
 
     while True:
@@ -39,27 +52,40 @@ def reconciliate(parent, children):
             if c.level <= calculating_level:
                 calculating_level = c.level
             '''
-            elements what level are higher or equals to the CURRENT CALCULATING LEVEL
-            will be counted, that means, a previous lower level element is also counted
+            All elements that are at the same level or greater than the CURRENT CALCULATING LEVEL will be counted, 
+            which means that any previously greater level elements will also be included in the count.
             for example:
             for parent with level 1, children in [4, 3, 4]
             the leading 4 is counted since CURRENT CALCULATING LEVEL is 4
             3 is counted since CURRENT CALCULATING LEVEL is 3
             the tailing 4 is skipped since CURRENT CALCULATING LEVEL is 3
             '''
-            n = reconciliate(c, children[i + 1:])
+            n = _reconciliate(c, children[i + 1:])
             reconciliated = True
             if c.level <= calculating_level:
-                if c.invocation_time is not None:
-                    time = time + c.invocation_time
+                if c.total_time is not None:
+                    time = time + c.total_time
             '''
             n is the start of next iteration, so we set i to n - 1
             '''
             i = i + n
         i = i + 1
-    if reconciliated:
+    if reconciliated and parent is not None:
+        # print(f'{parent.seq} - {parent.level} - {time} / {parent.total_time}')
         parent.invocation_time = time
+        if parent.total_time is not None:
+            parent.time = parent.total_time - parent.invocation_time
+        parent.calculated = True
     return i
+
+
+class ListenerWrapper:
+
+    def __init__(self, listener):
+        self.post_listener = listener
+
+    def listen(self, cums, index):
+        pass
 
 
 class Cum:
@@ -88,6 +114,8 @@ class Cum:
         self.total_percent = total_percent
         self.invocation_time = invocation_time
         self.invocation_percent = invocation_percent
+        self.calculated = False
+        self.lowest_level_method = False
 
     def get_values(self):
         return [
@@ -106,10 +134,10 @@ class Cum:
         ]
 
     def is_valid(self):
-        return self.level > 0
+        return self.level > 0 and len(self.name) > 0
 
     def __str__(self):
-        return f"{self.level} - {self.name}"
+        return f"{self.seq} - {self.level} - {self.total_percent}% - {self.time}/{self.invocation_time}/{self.total_time} ms - {self.name}"
 
     def __lt__(self, other):
         return self.level < other.level

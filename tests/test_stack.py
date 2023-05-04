@@ -2,7 +2,7 @@ import unittest
 import stack
 
 
-class NumericListener:
+class NumericDropListener:
     def __init__(self):
         self.list = []
 
@@ -19,6 +19,38 @@ class NumericListener:
 
     def __str__(self):
         return ",".join(map(str, self.list))
+
+
+class NumericCalcListener:
+    def __init__(self):
+        self.list_parent = []
+        self.list_children = []
+
+    def listen(self, parent, children):
+        self.list_parent.append(parent)
+        self.list_children.append(children)
+
+    def get_recent_elements(self):
+        e = [list(self.list_parent), list(self.list_children)]
+        self.reset()
+        return e
+
+    def get_length(self):
+        return len(self.list_parent)
+
+    def reset(self):
+        self.list_parent.clear()
+        self.list_children.clear()
+
+    def __str__(self):
+        texts = []
+        for i in range(0, len(self.list_parent)):
+            if self.list_parent[i] is None:
+                p = 0
+            else:
+                p = self.list_parent[i]
+            texts.append(f'{p}({",".join(map(str, self.list_children[i]))})')
+        return "|".join(texts)
 
 
 class TestingCase(unittest.TestCase):
@@ -52,36 +84,50 @@ class TestingCase(unittest.TestCase):
         self.assertEqual(2, pos)
 
     def test_normal_steps(self):
-        lo = NumericListener()
-        listener = lo.listen
-        s = stack.Stack(listener)
+        lo = NumericDropListener()
+        lc = NumericCalcListener()
+        s = stack.Stack(lo.listen, lc.listen)
         s.push(1)
         self.assertEqual("", str(lo))
+        self.assertEqual("0()", str(lc))
         s.push(1)
         self.assertEqual("", str(lo))
+        self.assertEqual("0()|1()", str(lc))
         s.push(2)
         s.push(2)
         self.assertEqual("", str(lo))
+        self.assertEqual("0()|1()|1()|2()", str(lc))
         s.push(3)
         self.assertEqual("", str(lo))
+        self.assertEqual("0()|1()|1()|2()|2()", str(lc))
         s.push(5)
+        self.assertEqual("0()|1()|1()|2()|2()|3()", str(lc))
         s.push(1)
+        self.assertEqual("0()|1()|1()|2()|2()|3()|1(2,2,3,5)", str(lc))
         self.assertEqual("2,2,3,5", str(lo))
         lo.reset()
+        lc.reset()
         s.push(4)
+        self.assertEqual("1()", str(lc))
         s.push(1)
         self.assertEqual("4", str(lo))
+        self.assertEqual("1()|1(4)", str(lc))
+
         lo.reset()
+        lc.reset()
         s.flush()
         self.assertEqual("1,1,1,1", str(lo))
+        self.assertEqual("0(1,1,1,1)", str(lc))
 
     def test_irregular_steps(self):
-        lo = NumericListener()
-        listener = lo.listen
-        s = stack.Stack(listener)
+        lo = NumericDropListener()
+        lc = NumericCalcListener()
+        s = stack.Stack(lo.listen, lc.listen)
         s.push(4)
         self.assertEqual("", str(lo))
+        self.assertEqual("0()", str(lc))
         s.push(1)
         self.assertEqual("4", str(lo))
+        self.assertEqual("0()|0(4)", str(lc))
 
 

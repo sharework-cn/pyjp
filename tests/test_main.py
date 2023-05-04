@@ -2,7 +2,22 @@ import io
 import unittest
 from main import ConsoleWriter, ConsoleCounterListener
 from html_parser import parse
-from lxml import etree
+from lxml import etree, cssselect
+
+"""
+The CPU usage information has been listed, 
+and the 'invocation_time' is expected to be corrected through this tool
+ 
+Level   total_time  invocation_time
+3	30000	30000
+1	300000	200000
+3	200000	150000
+4	30000	20000
+5	20000	20000
+4	120000	70000
+7	70000	10000
+8	10000	10000
+"""
 
 HTML_TEXT = """
 <!DOCTYPE html>
@@ -28,35 +43,35 @@ HTML_TEXT = """
 <style>th {border:1px solid #BBBBBB;padding: 3px; margin-bottom: 3px}
 td {whitespace:nowrap; padding: 0 3px}</style><table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />7% - 1,624,655 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />run<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />7% - 30,000 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />run<br />
 </td>
 </tr>
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 1,618,659 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />runTasks<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 300,000 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />runTasks<br />
 </td>
 </tr>
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 1,618,637 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />runTask<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 200,000 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />runTask<br />
 </td>
 </tr>
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_corner_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 1,618,637 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />session.<wbr />IoEvent.<wbr />run<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_corner_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 30,000 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />session.<wbr />IoEvent.<wbr />run<br />
 </td>
 </tr>
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_corner_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 1,618,637 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />IoFilterEvent.<wbr />fire<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_corner_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />5% - 20,000 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />IoFilterEvent.<wbr />fire<br />
 </td>
 </tr>
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="18" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 37.<wbr />8% - 1,546,888 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />DefaultIoFilterChain$<wbr />EntryImpl$<wbr />1.<wbr />messageReceived<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="18" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 37.<wbr />8% - 120,000 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />DefaultIoFilterChain$<wbr />EntryImpl$<wbr />1.<wbr />messageReceived<br />
 </td>
 </tr>
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_corner_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="18" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 37.<wbr />8% - 1,546,888 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />DefaultIoFilterChain.<wbr />callNextMessageReceived<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_corner_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="18" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 37.<wbr />8% - 70,000 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />DefaultIoFilterChain.<wbr />callNextMessageReceived<br />
 </td>
 </tr>
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="18" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 37.<wbr />7% - 1,546,014 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />DefaultIoFilterChain$<wbr />TailFilter.<wbr />messageReceived<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/pixel_transparent_1.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="18" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 37.<wbr />7% - 10,000 ms org.<wbr />apache.<wbr />mina.<wbr />core.<wbr />filterchain.<wbr />DefaultIoFilterChain$<wbr />TailFilter.<wbr />messageReceived<br />
 </td>
 </tr>
 </table></body>
@@ -66,24 +81,15 @@ td {whitespace:nowrap; padding: 0 3px}</style><table border="0" cellpadding="0" 
 
 class TestingCase(unittest.TestCase):
 
-    def test_simple_iterate(self):
-        source = etree.fromstring(HTML_TEXT)
-        context = etree.iterparse(source)
-        for action, elem in context:
-            if elem.tag == 'p':
-                print(elem.text)
-
-            # 清除处理过的节点
-            elem.clear()
-
-            # 遍历该节点之前的兄弟节点，并删除
-            while elem.getprevious() is not None:
-                del elem.getparent()[0]
-
     def test_string_input(self):
         source_file = io.BytesIO(HTML_TEXT.encode('utf-8'))
         console_writer = ConsoleWriter()
         console_counter_listener = ConsoleCounterListener()
-        parse(source_file, console_writer.listen, 3, ConsoleCounterListener().listen)
+        parse(source_file,
+              console_writer.listen,
+              decode="utf-8",
+              counter_listener=console_counter_listener.listen,
+              counter_interval=3
+              )
         self.assertEqual(8, console_writer.count)
         self.assertEqual(2, console_counter_listener.events)

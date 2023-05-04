@@ -109,7 +109,7 @@ class ConsoleCounterListener:
         self.events = 0
 
     def listen(self, count):
-        print(format(count), f"{count} lines written")
+        print(f"{count} lines written")
         self.events = self.events + 1
 
 
@@ -124,7 +124,11 @@ if __name__ == '__main__':
     writer = CsvWriter(output_file)
     exception = None
     try:
-        parse(source_file, writer.listen, 5000, ConsoleCounterListener().listen)
+        parse(source_file,
+              writer.listen,
+              decode="utf-8",
+              counter_listener=ConsoleCounterListener().listen,
+              counter_interval=5000)
     except Exception as e:
         exception = e
     source_file.close()

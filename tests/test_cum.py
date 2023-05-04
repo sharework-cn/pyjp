@@ -41,7 +41,7 @@ class TestingCase(unittest.TestCase):
                 copy(arr[1]),
                 cum.Cum(0, 0, "BROTHER"),
                 copy(arr[1])]
-        next_pos = cum.reconciliate(parent, cums)
+        next_pos = cum._reconciliate(parent, cums)
         self.assertEqual(3, cums[3].invocation_time)
         self.assertEqual(6, cums[2].invocation_time)
         self.assertEqual(8, cums[1].invocation_time)
