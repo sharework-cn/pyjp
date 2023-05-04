@@ -31,7 +31,12 @@ class TrIterator:
                 else:
                     bytes_to_skip = len(self.buffer)
                     try:
-                        self.buffer += next(self.source).decode(self.decode)
+                        line = next(self.source)
+                        if isinstance(line, str):
+                            self.buffer += line
+                        else:
+                            if line is not None:
+                                self.buffer += line.decode(self.decode)
                     except StopIteration:
                         data = self.buffer
                         self.buffer = ""
@@ -40,9 +45,20 @@ class TrIterator:
                 pos = self.buffer.find("<tr")
                 if pos >= 0:
                     start_pos = pos
+                    if self.buffer[pos:pos + 5] == "<tr/>":
+                        data = "<tr/>"
+                        self.buffer = self.buffer[pos + 5:]
+                        break
                 else:
                     try:
-                        self.buffer = next(self.source).decode(self.decode)
+                        line = next(self.source)
+                        if isinstance(line, str):
+                            self.buffer = line
+                        else:
+                            if line is not None:
+                                self.buffer = line.decode(self.decode)
+                            else:
+                                self.buffer = ""
                     except StopIteration as e:
                         raise e
         tr = None
@@ -53,7 +69,8 @@ class TrIterator:
         return tr
 
 
-def parse_tr(tr):
+def _parse_tr(tr,
+              pattern=r'(?P<percentage>\d+(?:\.\d+)?)%\s*-\s*(?P<time>\d{1,3}(?:,\d{3})*|\d+)\s*ms\s*(?P<method>.*)'):
     images = tr.cssselect("img")
     level = 0
     for img in images:
@@ -68,18 +85,25 @@ def parse_tr(tr):
         ngs = ngs_xpath(e)
         if ngs:
             text += "".join(ngs)
-    pattern = r'(?P<percentage>\d+(?:\.\d+)?)%\s*-\s*(?P<time>\d{1,3}(?:,\d{3})*|\d+)\s*ms\s*(?P<method>.*)'
+    cum = Cum(level=level)
     match = re.search(pattern, text)
-    percentage = float(match.group('percentage'))
-    time = int(match.group('time').replace(',', ''))
-    method = match.group('method').strip()
-    return Cum(level=level,
-               total_time=time,
-               total_percent=percentage,
-               name=method)
+    try:
+        cum.total_time = int(match.group('time').replace(',', ''))
+        cum.total_percent = float(match.group('percentage'))
+        cum.name = match.group('method').strip()
+        cum.hits = int(match.group('events').replace(',', ''))
+        cum.average_time = int(match.group('average_time').replace(',', ''))
+    except Exception:
+        pass
+    return cum
 
 
-def parse(source, listener, decode="utf-8", counter_interval=5000, counter_listener=None):
+def parse(source,
+          listener,
+          pattern=r'(?P<percentage>\d+(?:\.\d+)?)%\s*-\s*(?P<time>\d{1,3}(?:,\d{3})*|\d+)\s*ms\s*(?P<method>.*)',
+          decode="utf-8",
+          counter_interval=5000,
+          counter_listener=None):
     trs = TrIterator(source, decode=decode)
     s = stack.Stack(listener, _reconciliate)
     count = 0
@@ -87,7 +111,7 @@ def parse(source, listener, decode="utf-8", counter_interval=5000, counter_liste
         if tr is not None:
             valign = tr.get("valign")
             if valign is not None and valign == "top":
-                cum = parse_tr(tr)
+                cum = _parse_tr(tr, pattern)
                 if cum is not None and cum.is_valid():
                     count = count + 1
                     cum.seq = count

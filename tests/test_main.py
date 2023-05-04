@@ -43,7 +43,7 @@ HTML_TEXT = """
 <style>th {border:1px solid #BBBBBB;padding: 3px; margin-bottom: 3px}
 td {whitespace:nowrap; padding: 0 3px}</style><table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
 <tr valign="top">
-<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" /> <img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" /> 39.<wbr />7% - 30,000 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />run<br />
+<td nowrap="nowrap"><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_bar_18.gif" /><img height="18" width="18" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/tree/menu_tee_minus_18.gif" /><img height="16" width="16" border="0" align="left" hspace="0" vspace="0" src="jprofiler_images/call_method_16.png" />&nbsp;<img height="7" width="19" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ff990000.png" /><img height="7" width="0" border="0" hspace="0" vspace="2" src="jprofiler_images/pixel_ffff3300.png" />&nbsp;39.<wbr />7% - 30,000 ms org.<wbr />apache.<wbr />mina.<wbr />filter.<wbr />executor.<wbr />OrderedThreadPoolExecutor$<wbr />Worker.<wbr />run<br />
 </td>
 </tr>
 <tr valign="top">
@@ -82,14 +82,21 @@ td {whitespace:nowrap; padding: 0 3px}</style><table border="0" cellpadding="0" 
 class TestingCase(unittest.TestCase):
 
     def test_string_input(self):
+        def put_cum(cum):
+            methods[cum.seq] = cum
+            print(str(cum))
+
         source_file = io.BytesIO(HTML_TEXT.encode('utf-8'))
-        console_writer = ConsoleWriter()
+        methods = {}
         console_counter_listener = ConsoleCounterListener()
         parse(source_file,
-              console_writer.listen,
+              put_cum,
               decode="utf-8",
               counter_listener=console_counter_listener.listen,
               counter_interval=3
               )
-        self.assertEqual(8, console_writer.count)
+        self.assertEqual(8, len(methods))
         self.assertEqual(2, console_counter_listener.events)
+        self.assertEqual(30000, methods[1].invocation_time)
+        self.assertEqual(150000, methods[3].invocation_time)
+        self.assertEqual(20000, methods[4].invocation_time)

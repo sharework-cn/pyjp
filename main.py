@@ -1,96 +1,9 @@
-from bs4 import BeautifulSoup
-import sys
-import logging
+import re
+from os import path
+from cum import _get_header
 from csv import writer as csv_writer
 from html_parser import parse
-
-
-def parse_line(line):
-    txt = ""
-    level = 0
-    for td in line.find_all("td"):
-        for e in td.contents:
-            # the image in the line with 18 pixes width and height can be counted into the hierarchical level
-            if str(type(e)) == "<class 'bs4.element.Tag'>" and e.name == "img" \
-                    and e["height"] == "18":
-                level = level + 1
-                # Ignore strings before the last image
-                txt = ""
-            # the string to be parsed
-            if str(type(e)) == "<class 'bs4.element.NavigableString'>":
-                txt = txt + e.text
-    sections = txt.strip().split("-")
-
-    if len(sections) >= 2:
-        return [level,
-                get_percent(sections[0]),
-                get_total_time(sections[1]),
-                get_time(sections[1]),
-                get_events(sections[1]),
-                get_method(sections[1])]
-    else:
-        return []
-
-
-def get_header():
-    return ["level", "percent", "total", "current", "events", "method"]
-
-
-def get_percent(s):
-    v = None
-    try:
-        v = float(s.replace("%", "").strip())
-    except Exception as e:
-        pass
-    return v
-
-
-def get_total_time(s):
-    v = None
-    try:
-        v = int(s.split(" ms ")[0].replace(",",""))
-    except Exception as e:
-        pass
-    return v
-
-
-def get_time(s):
-    """
-    v = s.split("[")[1]
-    v = v.replace("ms", "").replace("]", "")
-    return int(v)
-    """
-    return None
-
-
-def get_events(s):
-    """
-    v = s.split("evt.")[0]
-    v = v.replace(",", "")
-    return int(v)
-    """
-    return None
-
-
-def get_method(s):
-    v = None
-    try:
-        v = s.split("ms")[1].strip()
-    except Exception as e:
-        pass
-    return v
-
-
-class CsvWriter:
-    def __init__(self, f):
-        self.writer = csv_writer(f, dialect="excel")
-        self.write_header = True
-
-    def listen(self, cum):
-        if self.write_header:
-            self.writer.writerow(get_header())
-            self.write_header = False
-        self.writer.writerow(cum.get_values())
+import click
 
 
 class ConsoleWriter:
@@ -109,29 +22,89 @@ class ConsoleCounterListener:
         self.events = 0
 
     def listen(self, count):
-        print(f"{count} lines written")
+        print(".", end="")
         self.events = self.events + 1
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        logging.error("Usage: script <input file> <output file>!")
-        exit(1)
+class CsvWriter:
+    def __init__(self, f):
+        self.writer = csv_writer(f, dialect="excel")
+        self.write_header = True
 
-    source_file = open(sys.argv[1], 'r', encoding='utf-8')
-    output_file = open(sys.argv[2], 'w', newline='')
+    def listen(self, cum):
+        if self.write_header:
+            self.writer.writerow(_get_header())
+            self.write_header = False
+        self.writer.writerow(cum.get_values())
+
+
+# Press the green button in the gutter to run the script.
+@click.command()
+@click.argument("source",
+                required=True,
+                type=click.Path(exists=True))
+@click.option("-d", "--destination",
+              type=str,
+              help="The file name to be parsed, default to the source_file.csv with the same folder")
+@click.option("-p", "--pattern",
+              type=str,
+              help="""The regex pattern to extract information from the line text, supported
+               named variables are: time, percentage, average_time, events, method""")
+@click.option("--decode",
+              type=str,
+              default="utf-8",
+              show_default=True,
+              help="Decode used to read the file")
+@click.option("--overwrite",
+              "overwrite",
+              flag_value=True,
+              type=bool,
+              default=False,
+              help="Overwrite an exist file, default is False")
+@click.option("--interval", "progress_interval",
+              type=click.IntRange(2, 50000),
+              default=2000,
+              help="The interval to print in progress message")
+def process(source,
+            destination=None,
+            pattern=None,
+            decode="utf-8",
+            overwrite=False,
+            progress_interval=2000):
+    """
+    A tool to parse the exported HTML JProfile report, it adds level and invocation time of
+    children methods, which is useful to get the elapsed time by the calling method itself.
+    """
+    if destination is None:
+        destination = path.join(path.dirname(source), path.basename(source) + ".csv")
+    write_mode = "x"
+    if overwrite:
+        write_mode = "w"
+    if pattern is None:
+        pattern = r'(?P<percentage>\d+(?:\.\d+)?)%\s*-\s*(?P<time>\d{1,3}(?:,\d{3})*|\d+)\s*ms\s*(?P<method>.*)'
+    else:
+        pattern = re.compile(pattern)
+    source_file = open(source, 'r', encoding=decode)
+    output_file = open(destination, write_mode, newline='')
     writer = CsvWriter(output_file)
     exception = None
+    print("Parsing", end="")
     try:
         parse(source_file,
               writer.listen,
-              decode="utf-8",
+              decode=decode,
+              pattern=pattern,
               counter_listener=ConsoleCounterListener().listen,
-              counter_interval=5000)
+              counter_interval=progress_interval)
     except Exception as e:
         exception = e
     source_file.close()
     output_file.close()
     if exception is not None:
         raise exception
+    else:
+        print("Done!")
+
+
+if __name__ == '__main__':
+    process()

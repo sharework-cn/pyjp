@@ -4,8 +4,8 @@ CUM - Cpu Usage of Method
 import sys
 
 
-def get_header():
-    return ["seq", "level", "name", "hits", "time", "percent", "average_time",
+def _get_header():
+    return ["seq", "level", "name", "parent_method", "hits", "time", "percent", "average_time",
             "average_percent", "total_time",
             "total_percent", "invocation_time", "invocation_percent"]
 
@@ -33,8 +33,6 @@ def _reconciliate(parent, children):
             # print(f'{parent.seq} - {parent.level} - {parent.total_time}')
             parent.invocation_time = parent.total_time
             parent.time = parent.total_time
-            if len(children) == 0:
-                parent.lowest_level_method = True
         parent_level = parent.level
 
     while True:
@@ -75,17 +73,9 @@ def _reconciliate(parent, children):
         parent.invocation_time = time
         if parent.total_time is not None:
             parent.time = parent.total_time - parent.invocation_time
+        parent.higher_level_method = True
         parent.calculated = True
     return i
-
-
-class ListenerWrapper:
-
-    def __init__(self, listener):
-        self.post_listener = listener
-
-    def listen(self, cums, index):
-        pass
 
 
 class Cum:
@@ -115,13 +105,14 @@ class Cum:
         self.invocation_time = invocation_time
         self.invocation_percent = invocation_percent
         self.calculated = False
-        self.lowest_level_method = False
+        self.higher_level_method = False
 
     def get_values(self):
         return [
             self.seq,
             self.level,
             self.name,
+            self.higher_level_method,
             self.hits,
             self.time,
             self.percent,
@@ -137,7 +128,10 @@ class Cum:
         return self.level > 0 and len(self.name) > 0
 
     def __str__(self):
-        return f"{self.seq} - {self.level} - {self.total_percent}% - {self.time}/{self.invocation_time}/{self.total_time} ms - {self.name}"
+        lowest_flag = ""
+        if self.higher_level_method:
+            lowest_flag = "*"
+        return f"{self.seq} - {self.level} - {self.total_percent}% - {self.time}/{self.invocation_time}/{self.total_time} ms - {self.name}{lowest_flag}"
 
     def __lt__(self, other):
         return self.level < other.level
