@@ -1,9 +1,9 @@
 import re
-from os import path
-from cum import _get_header
-from csv import writer as csv_writer
-from html_parser import parse
 import click
+from os import path
+from csv import writer as csv_writer
+from pyjp.cum import  _get_header
+from pyjp.html_parser import parse
 
 
 class ConsoleWriter:

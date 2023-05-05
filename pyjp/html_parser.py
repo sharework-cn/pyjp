@@ -1,9 +1,9 @@
+import re
 from lxml import html
 from lxml.etree import XPath
 from lxml.cssselect import CSSSelector
-from cum import Cum, _reconciliate
-import stack
-import re
+from pyjp.cum import Cum, _reconciliate
+from pyjp import stack
 
 
 class TrIterator:

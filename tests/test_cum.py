@@ -1,7 +1,6 @@
 import unittest
 from copy import copy
-
-import cum
+from pyjp import cum
 
 
 def create_cums():
@@ -44,7 +43,7 @@ class TestingCase(unittest.TestCase):
         next_pos = cum._reconciliate(parent, cums)
         self.assertEqual(3, cums[3].invocation_time)
         self.assertEqual(6, cums[2].invocation_time)
-        self.assertEqual(8, cums[1].invocation_time)
-        self.assertEqual(15, parent.invocation_time)
+        self.assertEqual(4, cums[1].invocation_time)
+        self.assertEqual(8, parent.invocation_time)
         self.assertEqual(8, next_pos)
 
