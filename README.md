@@ -31,6 +31,7 @@ child method. Once we have the invocation time, we can calculate the running tim
 pip install pyjp
 ```
 or download from https://github.com/sharework-cn/pyjp/releases, and then use `pip` to install
+
 2. Run `pyjp --help` for the instruction:
 ```commandline
 pyjp --help
@@ -41,8 +42,8 @@ Usage: pyjp [OPTIONS] SOURCE
   by the calling method itself.
 
 Options:
-  -d, --destination TEXT    The file name to be parsed, default to the
-                            source_file.csv with the same folder
+  -d, --destination TEXT    The output file name, default to the source_file.csv
+                            with the same folder
   -p, --pattern TEXT        The regex pattern to extract information from the
                             line text, supported named variables are: time,
                             percentage, average_time, events, method

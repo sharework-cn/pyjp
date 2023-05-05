@@ -43,9 +43,9 @@ class CsvWriter:
 @click.argument("source",
                 required=True,
                 type=click.Path(exists=True))
-@click.option("-d", "--destination",
+@click.option("-o", "--out",
               type=str,
-              help="The file name to be parsed, default to the source_file.csv with the same folder")
+              help="The output file name, default to the source_file.csv with the same folder")
 @click.option("-p", "--pattern",
               type=str,
               help="""The regex pattern to extract information from the line text, supported
@@ -66,7 +66,7 @@ class CsvWriter:
               default=2000,
               help="The interval to print in progress message")
 def process(source,
-            destination=None,
+            output=None,
             pattern=None,
             decode="utf-8",
             overwrite=False,
@@ -75,8 +75,8 @@ def process(source,
     A tool to parse the exported HTML JProfile report, it adds level and invocation time of
     children methods, which is useful to get the elapsed time by the calling method itself.
     """
-    if destination is None:
-        destination = path.join(path.dirname(source), path.basename(source) + ".csv")
+    if output is None:
+        output = path.join(path.dirname(source), path.basename(source) + ".csv")
     write_mode = "x"
     if overwrite:
         write_mode = "w"
@@ -85,7 +85,7 @@ def process(source,
     else:
         pattern = re.compile(pattern)
     source_file = open(source, 'r', encoding=decode)
-    output_file = open(destination, write_mode, newline='')
+    output_file = open(output, write_mode, newline='')
     writer = CsvWriter(output_file)
     exception = None
     print("Parsing", end="")
